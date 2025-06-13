@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Coleta Centro - Visual Neon", layout="wide")
+st.set_page_config(page_title="Coleta Centro", layout="wide")
 
 st.markdown("""
     <style>
@@ -13,21 +13,15 @@ st.markdown("""
             color: white;
         }
         h1, h2, h3 {
-            color: #8a2be2;
+            color: white;
         }
         .block-container {
             padding-top: 2rem;
         }
-        .metric {
-            background: #1f1f3a;
-            border-radius: 12px;
-            padding: 1rem;
-            text-align: center;
-        }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align: center; color: #e600ff;'>🚛 Coleta Centro - Dashboard Neon</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: white;'>🚛 Coleta Centro</h1>", unsafe_allow_html=True)
 
 df = pd.read_csv("dados_coleta_kg.csv")
 meses = df["Mes"].unique().tolist()
@@ -70,4 +64,4 @@ fig_pie.update_layout(
 st.plotly_chart(fig_pie, use_container_width=True)
 
 st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>🔮 Desenvolvido com visual neon para análise de coleta inteligente</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>🔮 Visual moderno para análise de coleta inteligente</p>", unsafe_allow_html=True)
