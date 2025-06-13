@@ -1,67 +1,55 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Coleta Centro", layout="wide")
+# Estilo da página
+st.set_page_config(layout="wide", page_title="Coleta Centro - Dashboard Neon")
 
-st.markdown("""
-    <style>
-        body { background-color: #0e0e2c; }
-        .stApp {
-            background-color: #0e0e2c;
-            color: white;
-        }
-        h1, h2, h3 {
-            color: white;
-        }
-        .block-container {
-            padding-top: 2rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# Carregar dados
+@st.cache_data
+def load_data():
+    data = {
+        "Mês": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"],
+        "Coleta AM": [295, 1021, 408, 1192, 1045],
+        "Coleta PM": [760, 1636, 793, 1606, 1461]
+    }
+    df = pd.DataFrame(data)
+    df["Total"] = df["Coleta AM"] + df["Coleta PM"]
+    df["Coleta AM (kg)"] = df["Coleta AM"] * 20
+    df["Coleta PM (kg)"] = df["Coleta PM"] * 20
+    df["Total (kg)"] = df["Total"] * 20
+    return df
 
-st.markdown("<h1 style='text-align: center; color: white;'>🚛 Coleta Centro</h1>", unsafe_allow_html=True)
+df = load_data()
 
-df = pd.read_csv("dados_coleta_kg.csv")
-meses = df["Mes"].unique().tolist()
-mes_escolhido = st.selectbox("🗓️ Selecione o mês:", meses)
+# Tema e título
+st.markdown("<h1 style='color:white; text-align: center;'>Coleta Centro</h1>", unsafe_allow_html=True)
+st.markdown("###", unsafe_allow_html=True)
 
-filtro = df[df["Mes"] == mes_escolhido].iloc[0]
-manha = int(filtro["Coleta_AM_kg"])
-tarde = int(filtro["Coleta_PM_kg"])
-total = int(filtro["Total_kg"])
+# Filtro de mês
+meses = df["Mês"].tolist()
+mes_selecionado = st.selectbox("Selecione o mês:", meses)
 
+# Filtrar dados
+df_filtrado = df[df["Mês"] == mes_selecionado]
+
+# Métricas
 col1, col2, col3 = st.columns(3)
-col1.metric("🌅 Manhã (kg)", f"{manha:,}", help="Coleta média: 20kg por saco")
-col2.metric("🌇 Tarde (kg)", f"{tarde:,}", help="Coleta média: 20kg por saco")
-col3.metric("🧮 Total Mensal", f"{total:,}")
+col1.metric("🌅 Manhã (kg)", f'{df_filtrado["Coleta AM (kg)"].values[0]:,.0f}')
+col2.metric("🌇 Tarde (kg)", f'{df_filtrado["Coleta PM (kg)"].values[0]:,.0f}')
+col3.metric("📅 Total Mensal", f'{df_filtrado["Total (kg)"].values[0]:,.0f}')
 
-# Gráfico de barras horizontal
-df_bar = pd.DataFrame({
+# Gráfico
+st.markdown(f"### Distribuição por Período - {mes_selecionado}")
+df_plot = pd.DataFrame({
     "Período": ["Manhã", "Tarde"],
-    "Kg": [manha, tarde]
+    "KG": [df_filtrado["Coleta AM (kg)"].values[0], df_filtrado["Coleta PM (kg)"].values[0]]
 })
-fig_bar = px.bar(df_bar, y="Período", x="Kg", orientation="h", color="Período",
-                 color_discrete_map={"Manhã": "#00f2ff", "Tarde": "#ff6a00"},
-                 title=f"Distribuição por Período - {mes_escolhido}",
-                 height=400)
-fig_bar.update_layout(
-    paper_bgcolor="#0e0e2c",
-    plot_bgcolor="#0e0e2c",
+colors = {"Manhã": "#00FFFF", "Tarde": "#FF6A00"}
+fig = px.bar(df_plot, x="KG", y="Período", color="Período", orientation="h", color_discrete_map=colors)
+fig.update_layout(
+    plot_bgcolor="rgba(0,0,0,0)",
+    paper_bgcolor="rgba(0,0,0,0)",
     font_color="white"
 )
-st.plotly_chart(fig_bar, use_container_width=True)
-
-# Gráfico de pizza
-fig_pie = px.pie(df_bar, names="Período", values="Kg", hole=0.45,
-                 color="Período", color_discrete_map={"Manhã": "#00f2ff", "Tarde": "#ff6a00"})
-fig_pie.update_layout(
-    paper_bgcolor="#0e0e2c",
-    font_color="white",
-    legend_font_color="white"
-)
-st.plotly_chart(fig_pie, use_container_width=True)
-
-st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>🔮 Visual moderno para análise de coleta inteligente</p>", unsafe_allow_html=True)
+st.plotly_chart(fig, use_container_width=True)
