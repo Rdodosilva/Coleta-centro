@@ -2,45 +2,46 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 🔥 Configuração da página
+# Configuração da página
 st.set_page_config(
     page_title="Dashboard Coleta Centro",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Estilo Dark
 st.markdown(
     """
     <style>
-    body {
-        background-color: #0a0a19;
-        color: white;
-    }
     .stApp {
         background-color: #0a0a19;
+        color: white;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-st.markdown("<h1 style='text-align: center; color: white;'>📦 Dashboard - Coleta Centro</h1>", unsafe_allow_html=True)
+st.markdown(
+    "<h1 style='text-align: center; color: white;'>📦 Dashboard - Coleta Centro</h1>",
+    unsafe_allow_html=True
+)
 
-# 📥 Carregar os dados
+# Carregar dados
 df = pd.read_excel("Coleta_centro2.xlsx")
 
-# 🔧 Processamento
+# Tratamento
 df["Data"] = pd.to_datetime(df["Data"])
 df["Mês"] = df["Data"].dt.strftime('%B').str.capitalize()
 df["Peso (kg)"] = df["Sacos Coletados"] * 20
 
-# 🎯 Filtros
+# Ordenação dos meses correta
 meses = sorted(df["Mês"].unique(), key=lambda x: pd.to_datetime(x, format='%B').month)
 mes_selecionado = st.sidebar.selectbox("Selecione o mês:", meses)
 
 df_filtrado = df[df["Mês"] == mes_selecionado]
 
-# 📊 KPIs
+# KPIs
 total_manha = df_filtrado[df_filtrado["Período"] == "Manhã"]["Peso (kg)"].sum()
 total_tarde = df_filtrado[df_filtrado["Período"] == "Tarde"]["Peso (kg)"].sum()
 total_geral = total_manha + total_tarde
@@ -52,8 +53,8 @@ col3.metric("📋 Total (kg)", f"{total_geral:,.0f}".replace(",", "."))
 
 st.markdown("---")
 
-# 📈 Gráfico de Barras - Coleta por Dia no mês selecionado
-st.subheader(f"Coleta por Dia - {mes_selecionado}")
+# Gráfico de Barras por Dia
+st.subheader(f"📊 Coleta por Dia - {mes_selecionado}")
 df_grouped = df_filtrado.groupby(["Data", "Período"])["Peso (kg)"].sum().reset_index()
 
 fig_bar = px.bar(
@@ -72,8 +73,8 @@ fig_bar.update_layout(
 )
 st.plotly_chart(fig_bar, use_container_width=True)
 
-# 🥧 Gráfico de Pizza - Manhã vs Tarde no mês selecionado
-st.subheader(f"Distribuição Manhã x Tarde - {mes_selecionado}")
+# Gráfico de Pizza
+st.subheader(f"🥧 Distribuição Manhã x Tarde - {mes_selecionado}")
 fig_pie = px.pie(
     names=["Manhã", "Tarde"],
     values=[total_manha, total_tarde],
@@ -88,8 +89,8 @@ fig_pie.update_layout(
 )
 st.plotly_chart(fig_pie, use_container_width=True)
 
-# 🔥 Gráfico de Barras Geral por mês
-st.subheader("Comparativo Geral por Mês")
+# Gráfico Geral por Mês
+st.subheader("📅 Comparativo Geral por Mês")
 df_mes = df.groupby(["Mês", "Período"])["Peso (kg)"].sum().reset_index()
 fig_bar_mes = px.bar(
     df_mes,
@@ -107,4 +108,3 @@ fig_bar_mes.update_layout(
     font_color="white"
 )
 st.plotly_chart(fig_bar_mes, use_container_width=True)
-
