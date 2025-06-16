@@ -1,110 +1,75 @@
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Configuração da página
-st.set_page_config(
-    page_title="Dashboard Coleta Centro",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Dashboard Coleta Centro", layout="wide")
 
-# Estilo Dark
 st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #0a0a19;
-        color: white;
-    }
-    </style>
-    """,
+    "<h1 style='text-align: center; color: white;'>Dashboard - Coleta Centro</h1>",
     unsafe_allow_html=True
 )
 
-st.markdown(
-    "<h1 style='text-align: center; color: white;'>📦 Dashboard - Coleta Centro</h1>",
-    unsafe_allow_html=True
-)
+# Ler os dados
+df = pd.read_excel("Coleta centro.xlsx")
 
-# Carregar dados
-df = pd.read_excel("Coleta_centro2.xlsx")
+# Limpeza de dados
+df = df.fillna(0)
+df = df[df["Mês"].notna() & (df["Mês"] != "Total")]
 
-# Tratamento
-df["Data"] = pd.to_datetime(df["Data"])
-df["Mês"] = df["Data"].dt.strftime('%B').str.capitalize()
-df["Peso (kg)"] = df["Sacos Coletados"] * 20
+# Sidebar para seleção de mês
+meses = df["Mês"].tolist()
+mes = st.sidebar.selectbox("Selecione o mês", meses + ["Todos"])
 
-# Ordenação dos meses correta
-meses = sorted(df["Mês"].unique(), key=lambda x: pd.to_datetime(x, format='%B').month)
-mes_selecionado = st.sidebar.selectbox("Selecione o mês:", meses)
-
-df_filtrado = df[df["Mês"] == mes_selecionado]
+if mes != "Todos":
+    dados = df[df["Mês"] == mes]
+else:
+    dados = df
 
 # KPIs
-total_manha = df_filtrado[df_filtrado["Período"] == "Manhã"]["Peso (kg)"].sum()
-total_tarde = df_filtrado[df_filtrado["Período"] == "Tarde"]["Peso (kg)"].sum()
-total_geral = total_manha + total_tarde
+coleta_am = dados["Coleta AM"].sum()
+coleta_pm = dados["Coleta PM"].sum()
+total = dados["Total"].sum()
 
-col1, col2, col3 = st.columns(3)
-col1.metric("🌅 Manhã (kg)", f"{total_manha:,.0f}".replace(",", "."))
-col2.metric("🌇 Tarde (kg)", f"{total_tarde:,.0f}".replace(",", "."))
-col3.metric("📋 Total (kg)", f"{total_geral:,.0f}".replace(",", "."))
+st.markdown("##")
+kpi1, kpi2, kpi3 = st.columns(3)
 
-st.markdown("---")
+kpi1.metric(label="Manhã (kg)", value=f"{coleta_am:,.0f}")
+kpi2.metric(label="Tarde (kg)", value=f"{coleta_pm:,.0f}")
+kpi3.metric(label="Total (kg)", value=f"{total:,.0f}")
 
-# Gráfico de Barras por Dia
-st.subheader(f"📊 Coleta por Dia - {mes_selecionado}")
-df_grouped = df_filtrado.groupby(["Data", "Período"])["Peso (kg)"].sum().reset_index()
-
+# Gráfico de barras
+st.markdown("### Distribuição por Período")
 fig_bar = px.bar(
-    df_grouped,
-    x="Data",
-    y="Peso (kg)",
-    color="Período",
-    barmode="group",
-    color_discrete_map={"Manhã": "deepskyblue", "Tarde": "darkorange"},
-    title=f"Coleta por Dia em {mes_selecionado}"
+    dados,
+    x=["Coleta AM", "Coleta PM"],
+    y="Mês",
+    orientation="h",
+    title="Coleta por Período",
+    labels={"value": "Quantidade (kg)", "Mês": "Mês", "variable": "Período"},
+    color_discrete_sequence=["#00FFFF", "#FF6600"]
 )
 fig_bar.update_layout(
-    paper_bgcolor="#0a0a19",
-    plot_bgcolor="#0a0a19",
+    plot_bgcolor="#0e1117",
+    paper_bgcolor="#0e1117",
     font_color="white"
 )
 st.plotly_chart(fig_bar, use_container_width=True)
 
-# Gráfico de Pizza
-st.subheader(f"🥧 Distribuição Manhã x Tarde - {mes_selecionado}")
+# Gráfico de pizza
+st.markdown("### Proporção Manhã vs Tarde")
 fig_pie = px.pie(
     names=["Manhã", "Tarde"],
-    values=[total_manha, total_tarde],
-    color=["Manhã", "Tarde"],
-    color_discrete_map={"Manhã": "deepskyblue", "Tarde": "darkorange"},
-    hole=0.4
+    values=[coleta_am, coleta_pm],
+    title="Distribuição Total",
+    color_discrete_sequence=["#00FFFF", "#FF6600"]
 )
 fig_pie.update_layout(
-    paper_bgcolor="#0a0a19",
-    plot_bgcolor="#0a0a19",
+    plot_bgcolor="#0e1117",
+    paper_bgcolor="#0e1117",
     font_color="white"
 )
 st.plotly_chart(fig_pie, use_container_width=True)
 
-# Gráfico Geral por Mês
-st.subheader("📅 Comparativo Geral por Mês")
-df_mes = df.groupby(["Mês", "Período"])["Peso (kg)"].sum().reset_index()
-fig_bar_mes = px.bar(
-    df_mes,
-    x="Mês",
-    y="Peso (kg)",
-    color="Período",
-    barmode="group",
-    category_orders={"Mês": meses},
-    color_discrete_map={"Manhã": "deepskyblue", "Tarde": "darkorange"},
-    title="Coleta Geral por Mês"
-)
-fig_bar_mes.update_layout(
-    paper_bgcolor="#0a0a19",
-    plot_bgcolor="#0a0a19",
-    font_color="white"
-)
-st.plotly_chart(fig_bar_mes, use_container_width=True)
+st.markdown("---")
+st.caption("Projeto Zeladoria - Coleta Centro")
