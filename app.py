@@ -107,3 +107,4 @@ fig_bar_mes.update_layout(
     font_color="white"
 )
 st.plotly_chart(fig_bar_mes, use_container_width=True)
+
